@@ -22,6 +22,8 @@ program mapping
   real(8) ::xlx2,yly2,zlz2,dx2,dz2,dy2 
   integer :: np=1 ! polynomial order
   logical :: exist
+  character(len=100) :: fileName1='sauve1.dat'
+  character(len=100) :: fileName2='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve.dat'
 
   xlx1=12.56637061
   yly1=2.
@@ -59,29 +61,31 @@ program mapping
   enddo
 
 
+!! =========== TEST THE DIMENSIONS OF THE BOUNDARY ================
+if (mod(ny2,2)/=mod(ny1,2)) THEN 
+   print *, 'Dimension Mismatch NY1= ',NY1,',  NY2= ',NY2 
+   stop
+ENDIF
+if (mod(nx2,2)/=mod(nX1,2)) THEN
+   print *, 'Dimension Mismatch NX1= ',NX1,',  NX2= ',NX2 
+   stop
+ENDIF
+!!==================================================================
 
-
-!! U Perturbation statistics !!
-
- OPEN(10,FILE='sauve1.dat',FORM='UNFORMATTED',&
+ OPEN(10,FILE=fileName1,FORM='UNFORMATTED',&
        ACCESS='DIRECT', RECL=8)
   COUNT = 1
 DO i_var=1,N_VAR !! THIS THE OUTER LOOP TO SWETCH BETWEEN VARIABLS
 
-if (i_var==N_VAR) then
+if (i_var==N_VAR .and. N_VAR>1) then
    if (mod(ny1,2)/=0) then
-       dny1=1
-       dny2=1
-    endif
+       dny1=1; dny2=1
+   endif
    if (mod(nx1,2)/=0) then
-       dnx1=1
-       dnx2=1
+       dnx1=1; dnx2=1
     endif
 else
-   dny1=0
-   dny2=0
-   dnx1=0
-   dnx2=0
+   dny1=0; dny2=0; dnx1=0; dnx2=0
 endif
 
 print *, 'i_VAR = ',i_var
@@ -89,7 +93,6 @@ print *, 'i_VAR = ',i_var
      DO J=1,ny1-dny1
         DO I=1,nx1-dnx1
            READ(10,REC=COUNT) ux1(I,J,K)
-           !ux1(I,J,K)=ux1(I,J,K)+y1(j) !!!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
            COUNT = COUNT + 1
         ENDDO
      ENDDO
@@ -260,11 +263,11 @@ print *, 'time = ',t2-t1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if (i_var ==1) then 
-    call system("rm /home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve.dat")
-    open(20, file='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve.dat', & 
+    call system('rm '//fileName2)
+    open(20, file=fileName2, & 
                  FORM='UNFORMATTED', action="write",access='stream')
 else
-    open(20,file='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve.dat',status='old',action='write',&
+    open(20,file=fileName2,status='old',action='write',&
          access='stream',form='unformatted',position='append')
 endif
 
