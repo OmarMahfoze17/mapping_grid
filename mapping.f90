@@ -4,9 +4,9 @@ program mapping
 !
 !############################################################################
   implicit none
-  integer :: i,j,k,i1,j1,k1,i2,j2,k2,j1_start
-  integer :: i1_start,k1_start,count
-  integer, parameter :: nx1=128 , ny1=129, nz1=256
+  integer :: i,j,k,i1,j1,k1,i2,j2,k2,j1_start,i_var
+  integer :: i1_start,k1_start,count,dny1,dny2,dnx1,dnx2
+  integer, parameter :: nx1=128 , ny1=129, nz1=256, N_VAR=10
   real(8),dimension(nx1, ny1, nz1) :: ux1,uy1,uz1
   real(8),dimension(ny1) :: y1
   real(8),dimension(nx1) :: x1
@@ -14,7 +14,7 @@ program mapping
   real(8) ::xlx1,yly1,zlz1,dx1,dz1,t1,t2 
   real(8) ::ay0,ay1,ay2,ax0,ax1,ax2,az0,az1,az2,za0
 !=========================================================
-  integer,parameter:: nx2=256, ny2=1032, nz2=256
+  integer,parameter:: nx2=128, ny2=129, nz2=128
   real(8),dimension(nx2, ny2, nz2) :: ux2,uy2,uz2
   real(8),dimension(ny2) :: y2
   real(8),dimension(nx2) :: x2
@@ -35,7 +35,7 @@ program mapping
   DO I=1,nx1
      x1(i)=dx1*(i-1)
   enddo
-   open (15,file='yp.dat',form='formatted',status='unknown')
+   open (15,file='yp1.dat',form='formatted',status='unknown')
    do j=1,ny1
       read(15,*) y1(j)
    enddo
@@ -63,13 +63,32 @@ program mapping
 
 !! U Perturbation statistics !!
 
- OPEN(11,FILE='ux001',FORM='UNFORMATTED',&
+ OPEN(10,FILE='sauve1.dat',FORM='UNFORMATTED',&
        ACCESS='DIRECT', RECL=8)
   COUNT = 1
+DO i_var=1,N_VAR !! THIS THE OUTER LOOP TO SWETCH BETWEEN VARIABLS
+
+if (i_var==N_VAR) then
+   if (mod(ny1,2)/=0) then
+       dny1=1
+       dny2=1
+    endif
+   if (mod(nx1,2)/=0) then
+       dnx1=1
+       dnx2=1
+    endif
+else
+   dny1=0
+   dny2=0
+   dnx1=0
+   dnx2=0
+endif
+
+print *, 'i_VAR = ',i_var
   DO K=1,nz1
-     DO J=1,ny1
-        DO I=1,nx1
-           READ(11,REC=COUNT) ux1(I,J,K)
+     DO J=1,ny1-dny1
+        DO I=1,nx1-dnx1
+           READ(10,REC=COUNT) ux1(I,J,K)
            !ux1(I,J,K)=ux1(I,J,K)+y1(j) !!!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
            COUNT = COUNT + 1
         ENDDO
@@ -82,14 +101,14 @@ program mapping
 call cpu_time(t1)
 k1_start=2
 do k2=1,nz2
-print *, 'K2  =  ', k2
+
 j1_start=2
-do j2=1,ny2
+do j2=1,ny2-dny2
 i1_start=2
-do i2=1,nx2
+do i2=1,nx2-dnx2
    do k1=k1_start,nz1
-   do j1=j1_start,ny1
-   do i1=i1_start,nx1
+   do j1=j1_start,ny1-dny1
+   do i1=i1_start,nx1-dnx1
          if (k1/=1 .and. k1/=nz1 .and. j1/=1 .and. j1/=ny1 .and. i1/=1 .and. i1/=nx1) then
          if (y1(j1-1)<=y2(j2) .and. y1(j1)>=y2(j2) .and.&
              x1(i1-1)<=x2(i2) .and. x1(i1)>=x2(i2) .and.&
@@ -234,20 +253,31 @@ do i2=1,nx2
 10 enddo 
 enddo
 enddo
-print *, y1(ny1),y2(ny2)
+
 call cpu_time(t2)
 print *, 'time = ',t2-t1
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-open(40, file='ux_mapped', FORM='UNFORMATTED', action="write",access='stream')
+if (i_var ==1) then 
+    call system("rm /home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve.dat")
+    open(20, file='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve.dat', & 
+                 FORM='UNFORMATTED', action="write",access='stream')
+else
+    open(20,file='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve.dat',status='old',action='write',&
+         access='stream',form='unformatted',position='append')
+endif
+
   DO K=1,nz2
-     DO J=1,ny2
-        DO I=1,nx2
-	    write (40) ux2(I,J,K)
+     DO J=1,ny2-dny2
+        DO I=1,nx2-dnx2
+	    write (20) ux2(I,J,K)
         ENDDO
      ENDDO
   ENDDO
-
+ close(20)
+ENDDO !! THIS THE OUTER LOOP TO SWETCH BETWEEN VARIABLS
+ 
+ close(10)
 end program mapping
 !
