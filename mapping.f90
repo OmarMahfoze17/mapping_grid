@@ -1,65 +1,83 @@
+module dummy
+  real(8),dimension(:), allocatable :: y1,y2
+end module
 !############################################################################
 !
 program mapping
 !
 !############################################################################
+  use dummy
   implicit none
-  integer :: i,j,k,i1,j1,k1,i2,j2,k2,j1_start,i_var
-  integer :: i1_start,k1_start,count,dny1,dny2,dnx1,dnx2
-  integer, parameter :: nx1=128 , ny1=129, nz1=256, N_VAR=10
+   
+  
+  integer :: i,j,k,i1,j1,k1,j1_start,i_var
+  integer :: i1_start,k1_start,count,dny1,dnx1
+  integer :: istret1,ncly1
+  integer, parameter :: nx1=128 , ny1=129, nz1=256, N_VAR=1
   real(8),dimension(nx1, ny1, nz1) :: ux1,uy1,uz1
-  real(8),dimension(ny1) :: y1
+  !real(8),dimension(ny1) :: y1
   real(8),dimension(nx1) :: x1
   real(8),dimension(nz1) :: z1
-  real(8) ::xlx1,yly1,zlz1,dx1,dz1,t1,t2 
+  real(8) ::xlx1,yly1,zlz1,dx1,dz1,t1,t2,beta1
   real(8) ::ay0,ay1,ay2,ax0,ax1,ax2,az0,az1,az2,za0
 !=========================================================
+  integer :: i2,j2,k2,dnx2,dny2,istret2,ncly2
   integer,parameter:: nx2=128, ny2=129, nz2=128
   real(8),dimension(nx2, ny2, nz2) :: ux2,uy2,uz2
-  real(8),dimension(ny2) :: y2
+  !real(8),dimension(ny2) :: y2
   real(8),dimension(nx2) :: x2
   real(8),dimension(nz2) :: z2
-  real(8) ::xlx2,yly2,zlz2,dx2,dz2,dy2 
-  integer :: np=1 ! polynomial order
+  real(8) ::xlx2,yly2,zlz2,dx2,dz2,dy2,beta2  
+  integer :: np=1 ! polynomial order  NOT USED
   logical :: exist
-  character(len=100) :: fileName1='sauve1.dat'
-  character(len=100) :: fileName2='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve.dat'
-
+  character(len=100) :: fileName1='ux001'
+  character(len=100) :: fileName2='ux_mapped'
+!!! ============== File 1 ===================================
+  allocate(y1(ny1))
   xlx1=12.56637061
   yly1=2.
   zlz1=4.188790205
-
-  xlx2=12.56637061
-  yly2=2.
-  zlz2=4.188790205
+  istret1=2
+  beta1=0.259065151
+  ncly1=2
   dx1=xlx1/(nx1-1)
   dz1=zlz1/(nz1-1)
   DO I=1,nx1
      x1(i)=dx1*(i-1)
   enddo
    open (15,file='yp1.dat',form='formatted',status='unknown')
-   do j=1,ny1
-      read(15,*) y1(j)
-   enddo
+   !do j=1,ny1
+      !read(15,*) y1(j)
+   !enddo
    close(15)
   DO K=1,nz1
      z1(k)=dz1*(k-1)
   enddo
 
-
+call stretching(y1,yly1,ny1,beta1,istret1,ncly1)
+!!!==========================================================
+!!! ============== File 2 ===================================   
+  allocate(y2(ny2))
+  xlx2=12.56637061
+  yly2=2.
+  zlz2=4.188790205
+  istret2=2
+  beta2=0.259065151
+  ncly2=2
   dx2=xlx2/(nx2-1)
   dy2=yly2/(ny2-1)
   dz2=zlz2/(nz2-1)
   DO I=1,nx2
      x2(i)=dx2*(i-1)
   enddo
-  DO j=1,ny2
-     y2(j)=dy2*(j-1)
-  enddo
+  !DO j=1,ny2
+     !y2(j)=dy2*(j-1)
+  !enddo
   DO K=1,nz2
      z2(k)=dz2*(k-1)
   enddo
-
+call stretching(y2,yly2,ny2,beta2,istret2,ncly2)
+!!!==========================================================
 
 !! =========== TEST THE DIMENSIONS OF THE BOUNDARY ================
 if (mod(ny2,2)/=mod(ny1,2)) THEN 
@@ -284,3 +302,144 @@ ENDDO !! THIS THE OUTER LOOP TO SWETCH BETWEEN VARIABLS
  close(10)
 end program mapping
 !
+
+!*******************************************************************
+subroutine stretching(yp,yly,ny,beta,istret,ncly)
+!
+!*******************************************************************
+!
+!use dummy
+implicit none
+
+real(8) :: yinf,den,xnum,xcx,den1,den2,den3,den4,xnum1,cst
+real(8) :: alpha,beta,pi,yly
+integer :: j,istret,ncly,ny
+real(8),dimension(129) :: yeta,yetai,ypi
+real(8),intent(out) :: yp(*)
+!allocate(yp(ny))
+pi=acos(-1.)
+yinf=-yly/2.
+den=2.*beta*yinf
+xnum=-yinf-sqrt(pi*pi*beta*beta+yinf*yinf)
+alpha=abs(xnum/den)
+xcx=1./beta/alpha
+
+if (alpha.ne.0.) then
+   if (istret.eq.1) yp(1)=0.
+   if (istret.eq.2) yp(1)=0.
+   if (istret.eq.1) yeta(1)=0.
+   if (istret.eq.2) yeta(1)=-1./2.
+   if (istret.eq.3) yp(1)=0.
+   if (istret.eq.3) yeta(1)=-1./2.
+   do j=2,ny!-1
+      if (istret==1) then
+         if (ncly.eq.0) yeta(j)=(j-1.)*(1./ny)
+         if ((ncly.eq.1).or.(ncly.eq.2)) yeta(j)=(j-1.)*(1./(ny-1.))
+      endif
+      if (istret==2) then
+         if (ncly.eq.0) yeta(j)=(j-1.)*(1./ny)-0.5
+         if ((ncly.eq.1).or.(ncly.eq.2)) yeta(j)=(j-1.)*(1./(ny-1.))-0.5
+      endif
+      if (istret==3) then
+         if (ncly.eq.0) yeta(j)=((j-1.)*(1./2./ny)-0.5)
+         if ((ncly.eq.1).or.(ncly.eq.2)) yeta(j)=((j-1.)*(1./2./(ny-1.))-0.5)
+      endif
+      den1=sqrt(alpha*beta+1.)
+      xnum=den1/sqrt(alpha/pi)/sqrt(beta)/sqrt(pi)
+      den=2.*sqrt(alpha/pi)*sqrt(beta)*pi*sqrt(pi)
+      den3=((sin(pi*yeta(j)))*(sin(pi*yeta(j)))/beta/pi)+alpha/pi
+      den4=2.*alpha*beta-cos(2.*pi*yeta(j))+1.
+      if ((ncly.ne.0).and.(j==ny).and.(istret==1)) then
+         xnum1=0.
+      else
+         xnum1=(atan(xnum*tan(pi*yeta(j))))*den4/den1/den3/den
+      endif
+      cst=sqrt(beta)*pi/(2.*sqrt(alpha)*sqrt(alpha*beta+1.))
+      if (istret==1) then
+         if (yeta(j).lt.0.5) yp(j)=xnum1-cst-yinf
+         if (yeta(j).eq.0.5) yp(j)=0.-yinf
+         if (yeta(j).gt.0.5) yp(j)=xnum1+cst-yinf
+      endif
+      if (istret==2) then
+         if (yeta(j).lt.0.5) yp(j)=xnum1-cst+yly
+         if (yeta(j).eq.0.5) yp(j)=0.+yly
+         if (yeta(j).gt.0.5) yp(j)=xnum1+cst+yly
+      endif
+      if (istret==3) then
+         if (yeta(j).lt.0.5) yp(j)=(xnum1-cst+yly)*2.
+         if (yeta(j).eq.0.5) yp(j)=(0.+yly)*2.
+         if (yeta(j).gt.0.5) yp(j)=(xnum1+cst+yly)*2.
+      endif
+   enddo
+
+endif
+!if (nrank==0) then
+!do j=1,ny
+!print *,j,yp(j),yeta(j)
+!enddo
+!endif
+!stop
+if (alpha.eq.0.) then
+   yp(1)=-1.e10
+   do j=2,ny
+      yeta(j)=(j-1.)*(1./ny)
+      yp(j)=-beta*cos(pi*yeta(j))/sin(yeta(j)*pi)
+   enddo
+endif
+if (alpha.ne.0.) then
+   do j=1,ny
+      if (istret==1) then
+         if (ncly.eq.0) yetai(j)=(j-0.5)*(1./ny)
+         if ((ncly.eq.1).or.(ncly.eq.2)) yetai(j)=(j-0.5)*(1./(ny-1.))
+      endif
+      if (istret==2) then
+         if (ncly.eq.0) yetai(j)=(j-0.5)*(1./ny)-0.5
+         if ((ncly.eq.1).or.(ncly.eq.2)) yetai(j)=(j-0.5)*(1./(ny-1.))-0.5
+      endif
+      if (istret==3) then
+         if (ncly.eq.0) yetai(j)=(j-0.5)*(1./2./ny)-0.5
+         if ((ncly.eq.1).or.(ncly.eq.2)) yetai(j)=(j-0.5)*(1./2./(ny-1.))-0.5
+      endif
+      
+      den1=sqrt(alpha*beta+1.)
+      xnum=den1/sqrt(alpha/pi)/sqrt(beta)/sqrt(pi)
+      den=2.*sqrt(alpha/pi)*sqrt(beta)*pi*sqrt(pi)
+      den3=((sin(pi*yetai(j)))*(sin(pi*yetai(j)))/beta/pi)+alpha/pi
+      den4=2.*alpha*beta-cos(2.*pi*yetai(j))+1.
+      xnum1=(atan(xnum*tan(pi*yetai(j))))*den4/den1/den3/den
+      cst=sqrt(beta)*pi/(2.*sqrt(alpha)*sqrt(alpha*beta+1.))
+      if (istret==1) then
+         if (yetai(j).lt.0.5) ypi(j)=xnum1-cst-yinf
+         if (yetai(j).eq.0.5) ypi(j)=0.-yinf
+         if (yetai(j).gt.0.5) ypi(j)=xnum1+cst-yinf
+      endif
+      if (istret==2) then
+         if (yetai(j).lt.0.5) ypi(j)=xnum1-cst+yly
+         if (yetai(j).eq.0.5) ypi(j)=0.+yly
+         if (yetai(j).gt.0.5) ypi(j)=xnum1+cst+yly
+      endif
+      if (istret==3) then
+         if (yetai(j).lt.0.5) ypi(j)=(xnum1-cst+yly)*2.
+         if (yetai(j).eq.0.5) ypi(j)=(0.+yly)*2.
+         if (yetai(j).gt.0.5) ypi(j)=(xnum1+cst+yly)*2.
+      endif
+   enddo
+endif
+if (alpha.eq.0.) then
+   ypi(1)=-1.e10
+   do j=2,ny
+      yetai(j)=(j-1.)*(1./ny)
+      ypi(j)=-beta*cos(pi*yetai(j))/sin(yetai(j)*pi)
+   enddo
+endif
+
+
+open(10,file='yp_test.dat', form='formatted')
+do j=1,ny
+write(10,*)yp(j)
+enddo
+ close(10)
+
+
+
+end subroutine stretching
