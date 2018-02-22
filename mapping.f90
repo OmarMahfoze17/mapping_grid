@@ -1,30 +1,27 @@
-module dummy
-  real(8),dimension(:), allocatable :: y1,y2
-end module
 !############################################################################
 !
 program mapping
 !
 !############################################################################
-  use dummy
+
   implicit none
    
-  
+!!! ============== File 1 ===================================
   integer :: i,j,k,i1,j1,k1,j1_start,i_var
   integer :: i1_start,k1_start,count,dny1,dnx1
   integer :: istret1,ncly1
   integer, parameter :: nx1=128 , ny1=129, nz1=256, N_VAR=1
   real(8),dimension(nx1, ny1, nz1) :: ux1,uy1,uz1
-  !real(8),dimension(ny1) :: y1
+  real(8),dimension(:),allocatable :: y1
   real(8),dimension(nx1) :: x1
   real(8),dimension(nz1) :: z1
   real(8) ::xlx1,yly1,zlz1,dx1,dz1,t1,t2,beta1
   real(8) ::ay0,ay1,ay2,ax0,ax1,ax2,az0,az1,az2,za0
-!=========================================================
+!================== File 2  ================================
   integer :: i2,j2,k2,dnx2,dny2,istret2,ncly2
-  integer,parameter:: nx2=128, ny2=129, nz2=128
+  integer,parameter:: nx2=256, ny2=259, nz2=258
   real(8),dimension(nx2, ny2, nz2) :: ux2,uy2,uz2
-  !real(8),dimension(ny2) :: y2
+  real(8),dimension(:),allocatable :: y2
   real(8),dimension(nx2) :: x2
   real(8),dimension(nz2) :: z2
   real(8) ::xlx2,yly2,zlz2,dx2,dz2,dy2,beta2  
@@ -45,16 +42,16 @@ program mapping
   DO I=1,nx1
      x1(i)=dx1*(i-1)
   enddo
-   open (15,file='yp1.dat',form='formatted',status='unknown')
+   !open (15,file='yp1.dat',form='formatted',status='unknown')
    !do j=1,ny1
       !read(15,*) y1(j)
    !enddo
-   close(15)
+  ! close(15)
   DO K=1,nz1
      z1(k)=dz1*(k-1)
   enddo
 
-call stretching(y1,yly1,ny1,beta1,istret1,ncly1)
+call stretching(y1,yly1,ny1,beta1,istret1,ncly1,'yp_1.dat')
 !!!==========================================================
 !!! ============== File 2 ===================================   
   allocate(y2(ny2))
@@ -76,7 +73,9 @@ call stretching(y1,yly1,ny1,beta1,istret1,ncly1)
   DO K=1,nz2
      z2(k)=dz2*(k-1)
   enddo
-call stretching(y2,yly2,ny2,beta2,istret2,ncly2)
+
+call stretching(y2,yly2,ny2,beta2,istret2,ncly2,'yp_2.dat')
+
 !!!==========================================================
 
 !! =========== TEST THE DIMENSIONS OF THE BOUNDARY ================
@@ -304,7 +303,7 @@ end program mapping
 !
 
 !*******************************************************************
-subroutine stretching(yp,yly,ny,beta,istret,ncly)
+subroutine stretching(yp,yly,ny,beta,istret,ncly,fileName)
 !
 !*******************************************************************
 !
@@ -314,9 +313,12 @@ implicit none
 real(8) :: yinf,den,xnum,xcx,den1,den2,den3,den4,xnum1,cst
 real(8) :: alpha,beta,pi,yly
 integer :: j,istret,ncly,ny
-real(8),dimension(129) :: yeta,yetai,ypi
+real(8),dimension(:), allocatable :: yeta,yetai,ypi
 real(8),intent(out) :: yp(*)
-!allocate(yp(ny))
+character(len=*) :: fileName
+allocate(yeta(ny))
+allocate(yetai(ny))
+allocate(ypi(ny))
 pi=acos(-1.)
 yinf=-yly/2.
 den=2.*beta*yinf
@@ -434,7 +436,7 @@ if (alpha.eq.0.) then
 endif
 
 
-open(10,file='yp_test.dat', form='formatted')
+open(10,file=fileName, form='formatted')
 do j=1,ny
 write(10,*)yp(j)
 enddo
