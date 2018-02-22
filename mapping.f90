@@ -8,9 +8,10 @@ program mapping
    
 !!! ============== File 1 ===================================
   integer :: i,j,k,i1,j1,k1,j1_start,i_var
-  integer :: i1_start,k1_start,count,dny1,dnx1
+  integer :: i1_start,k1_start,dny1,dnx1
+  integer(8) ::count
   integer :: istret1,ncly1
-  integer, parameter :: nx1=128 , ny1=129, nz1=256, N_VAR=1
+  integer, parameter :: nx1=2765 , ny1=321, nz1=256,N_VAR=13
   real(8),dimension(nx1, ny1, nz1) :: ux1,uy1,uz1
   real(8),dimension(:),allocatable :: y1
   real(8),dimension(nx1) :: x1
@@ -19,7 +20,7 @@ program mapping
   real(8) ::ay0,ay1,ay2,ax0,ax1,ax2,az0,az1,az2,za0
 !================== File 2  ================================
   integer :: i2,j2,k2,dnx2,dny2,istret2,ncly2
-  integer,parameter:: nx2=256, ny2=259, nz2=258
+  integer,parameter:: nx2=1843, ny2=205, nz2=204
   real(8),dimension(nx2, ny2, nz2) :: ux2,uy2,uz2
   real(8),dimension(:),allocatable :: y2
   real(8),dimension(nx2) :: x2
@@ -27,15 +28,15 @@ program mapping
   real(8) ::xlx2,yly2,zlz2,dx2,dz2,dy2,beta2  
   integer :: np=1 ! polynomial order  NOT USED
   logical :: exist
-  character(len=100) :: fileName1='ux001'
-  character(len=100) :: fileName2='ux_mapped'
+  character(len=100) :: fileName1='/home/om1014/PhD/INCOMPACT3D/TBL/TBL_PRO_xlx_500/meanVal_20000/sauve.dat'
+  character(len=100) :: fileName2='sauve_mapped.dat'
 !!! ============== File 1 ===================================
   allocate(y1(ny1))
-  xlx1=12.56637061
-  yly1=2.
-  zlz1=4.188790205
-  istret1=2
-  beta1=0.259065151
+  xlx1=500.
+  yly1=40
+  zlz1=40
+  istret1=3
+  beta1=1.3
   ncly1=2
   dx1=xlx1/(nx1-1)
   dz1=zlz1/(nz1-1)
@@ -55,12 +56,12 @@ call stretching(y1,yly1,ny1,beta1,istret1,ncly1,'yp_1.dat')
 !!!==========================================================
 !!! ============== File 2 ===================================   
   allocate(y2(ny2))
-  xlx2=12.56637061
-  yly2=2.
-  zlz2=4.188790205
-  istret2=2
-  beta2=0.259065151
-  ncly2=2
+  xlx2=xlx1
+  yly2=yly1
+  zlz2=zlz1
+  istret2=istret1
+  beta2=beta1
+  ncly2=ncly1
   dx2=xlx2/(nx2-1)
   dy2=yly2/(ny2-1)
   dz2=zlz2/(nz2-1)
@@ -115,7 +116,7 @@ print *, 'i_VAR = ',i_var
      ENDDO
   ENDDO
 
-
+print *, 'COUNT = ',COUNT
 
 
 call cpu_time(t1)
