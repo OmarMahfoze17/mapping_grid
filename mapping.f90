@@ -1,5 +1,9 @@
 !############################################################################
-!
+! This Code is made to map the field of INCOMPACT3D of a specific grid size 
+! to a differnet grid.
+! The code uses 2nd order polynomial interpolation
+! 
+! The code is made by Omar Mahfoze, E-mail: omar.mahfoze15@imperial.ac.uk
 program mapping
 !
 !############################################################################
@@ -11,7 +15,7 @@ program mapping
   integer :: i1_start,k1_start,dny1,dnx1
   integer(8) ::count
   integer :: istret1,ncly1
-  integer, parameter :: nx1=2765 , ny1=321, nz1=256,N_VAR=13
+  integer, parameter :: nx1=128 , ny1=129, nz1=256,N_VAR=10 !13
   real(8),dimension(nx1, ny1, nz1) :: ux1,uy1,uz1
   real(8),dimension(:),allocatable :: y1
   real(8),dimension(nx1) :: x1
@@ -20,7 +24,7 @@ program mapping
   real(8) ::ay0,ay1,ay2,ax0,ax1,ax2,az0,az1,az2,za0
 !================== File 2  ================================
   integer :: i2,j2,k2,dnx2,dny2,istret2,ncly2
-  integer,parameter:: nx2=1843, ny2=205, nz2=204
+  integer,parameter:: nx2=128, ny2=129, nz2=256
   real(8),dimension(nx2, ny2, nz2) :: ux2,uy2,uz2
   real(8),dimension(:),allocatable :: y2
   real(8),dimension(nx2) :: x2
@@ -28,15 +32,17 @@ program mapping
   real(8) ::xlx2,yly2,zlz2,dx2,dz2,dy2,beta2  
   integer :: np=1 ! polynomial order  NOT USED
   logical :: exist
-  character(len=100) :: fileName1='/home/om1014/PhD/INCOMPACT3D/TBL/TBL_PRO_xlx_500/meanVal_20000/sauve.dat'
-  character(len=100) :: fileName2='sauve_mapped.dat'
+  !character(len=100) :: fileName1='/home/om1014/PhD/INCOMPACT3D/TBL/TBL_PRO_xlx_500/sauve.dat'
+  character(len=100) :: fileName1='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve_orig.dat'
+  !character(len=100) :: fileName2='sauve_mapped_2.dat'
+  character(len=100) :: fileName2='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve_in.dat'
 !!! ============== File 1 ===================================
   allocate(y1(ny1))
-  xlx1=500.
-  yly1=40
-  zlz1=40
-  istret1=3
-  beta1=1.3
+  xlx1=12.5663706144 !500.
+  yly1=2. !40.
+  zlz1=2. !40.
+  istret1=2 !3
+  beta1=0.259065151 !1.3
   ncly1=2
   dx1=xlx1/(nx1-1)
   dz1=zlz1/(nz1-1)
@@ -52,7 +58,7 @@ program mapping
      z1(k)=dz1*(k-1)
   enddo
 
-call stretching(y1,yly1,ny1,beta1,istret1,ncly1,'yp_1.dat')
+call stretching(y1,yly1,ny1,beta1,istret1,ncly1,'yp_1.dat')  ! get Y1 values and save them in a file
 !!!==========================================================
 !!! ============== File 2 ===================================   
   allocate(y2(ny2))
@@ -75,11 +81,12 @@ call stretching(y1,yly1,ny1,beta1,istret1,ncly1,'yp_1.dat')
      z2(k)=dz2*(k-1)
   enddo
 
-call stretching(y2,yly2,ny2,beta2,istret2,ncly2,'yp_2.dat')
+call stretching(y2,yly2,ny2,beta2,istret2,ncly2,'yp_2.dat') ! get Y2 values and save them in a file
 
 !!!==========================================================
 
 !! =========== TEST THE DIMENSIONS OF THE BOUNDARY ================
+! The BC determines the grid numbers (odd/even), so the mappped and the original BC sould similar.
 if (mod(ny2,2)/=mod(ny1,2)) THEN 
    print *, 'Dimension Mismatch NY1= ',NY1,',  NY2= ',NY2 
    stop
@@ -106,7 +113,9 @@ else
    dny1=0; dny2=0; dnx1=0; dnx2=0
 endif
 
-print *, 'i_VAR = ',i_var
+print *, 'Reading the variable number : ',i_var
+ux1=0.
+ux2=1.
   DO K=1,nz1
      DO J=1,ny1-dny1
         DO I=1,nx1-dnx1
@@ -158,14 +167,14 @@ do i2=1,nx2-dnx2
                           ((ay0*ux1(i1-1,j1-1,k1+1)+ay1*ux1(i1-1,j1,k1+1)+ay2*ux1(i1-1,j1+1,k1+1))*ax0+&
 			  (ay0*ux1(i1,j1-1,k1+1)+ay1*ux1(i1,j1,k1+1)+ay2*ux1(i1,j1+1,k1+1))*ax1+&
                           (ay0*ux1(i1-1,j1-1,k1+1)+ay1*ux1(i1-1,j1,k1+1)+ay2*ux1(i1-1,j1+1,k1+1))*ax2)*az2
-             
+             !ux2(i2,j2,k2)=ux1(i1-1,j1-1,k1-1)
              k1_start=k1
              j1_start=j1
              i1_start=i1
              goto 10
          endif
 
-         elseif (i1==nx1) then !#######################################################################
+         elseif (i1==nx1 .and. k1/=nz1) then !#######################################################################
          if (y1(j1-1)<=y2(j2) .and. y1(j1)>=y2(j2) .and.&
              x1(i1-1)<=x2(i2) .and. x1(i1)>=x2(i2) .and.&
              z1(k1-1)<=z2(k2) .and. z1(k1)>=z2(k2)) then
@@ -174,9 +183,9 @@ do i2=1,nx2-dnx2
              ay1=(y2(j2)-y1(j1-1))*(y2(j2)-y1(j1+1))/((y1(j1)-y1(j1-1))*(y1(j1)-y1(j1+1))) 
              ay2=(y2(j2)-y1(j1-1))*(y2(j2)-y1(j1))/((y1(j1+1)-y1(j1-1))*(y1(j1+1)-y1(j1)))
 
-             ax0=(x2(i2)-x1(i1-1))*(x2(i2)-x1(i1))/((x1(i1-2)-x1(i1-1))*(x1(i1-2)-x1(i1))) 
-             ax1=(x2(i2)-x1(i1-2))*(x2(i2)-x1(i1))/((x1(i1-1)-x1(i1-2))*(x1(i1-1)-x1(i1))) 
-             ax2=(x2(i2)-x1(i1-2))*(x2(i2)-x1(i1-1))/((x1(i1)-x1(i1-2))*(x1(i1)-x1(i1-1)))
+             ax0=(x2(i2)-x1(i1-1))*(x2(i2)-x1(i1 ))/((x1(i1-2)-x1(i1-1))*(x1(i1-2)-x1(i1 ))) 
+             ax1=(x2(i2)-x1(i1-2))*(x2(i2)-x1(i1 ))/((x1(i1-1)-x1(i1-2))*(x1(i1-1)-x1(i1 ))) 
+             ax2=(x2(i2)-x1(i1-2))*(x2(i2)-x1(i1-1))/((x1(i1 )-x1(i1-2))*(x1(i1 )-x1(i1-1)))
 
              az0=(z2(k2)-z1(k1))*(z2(k2)-z1(k1+1))/((z1(k1-1)-z1(k1))*(z1(k1-1)-z1(k1+1))) 
              az1=(z2(k2)-z1(k1-1))*(z2(k2)-z1(k1+1))/((z1(k1)-z1(k1-1))*(z1(k1)-z1(k1+1))) 
@@ -193,13 +202,23 @@ do i2=1,nx2-dnx2
                           ((ay0*ux1(i1-2,j1-1,k1+1)+ay1*ux1(i1-2,j1,k1+1)+ay2*ux1(i1-2,j1+1,k1+1))*ax0+&
 			  (ay0*ux1(i1-1,j1-1,k1+1)+ay1*ux1(i1-1,j1,k1+1)+ay2*ux1(i1-1,j1+1,k1+1))*ax1+&
                           (ay0*ux1(i1-2,j1-1,k1+1)+ay1*ux1(i1-2,j1,k1+1)+ay2*ux1(i1-2,j1+1,k1+1))*ax2)*az2
-             
+             !ux2(i2,j2,k2)=ux1(i1,j1,k1)
+	     if (isnan(ax0) .or. isnan(ax1) .or. isnan(ax2) .or.isnan(ay0) .or. isnan(ay1) &
+                  .or. isnan(ay2) .or. isnan(az0) .or. isnan(az1) .or. isnan(az2)) then
+	         print *, '-----------------------------------------'
+	         print *, i1,j1,k1
+                 print *, ax0 ,ax1 , ax2
+	         print *, ay0 ,ay1 , ay2
+	         print *, az0 ,az1 , az2
+	         print *, 'XXXXXXXX',(z1(k1+1)-z1(k1-1)),(z1(k1+1)-z1(k1))
+             endif
+
              k1_start=k1
              j1_start=j1
              i1_start=i1
              goto 10
          endif
-         elseif (j1==ny1) then !#######################################################################
+         elseif (j1==ny1 .and. k1/=nz1) then !#######################################################################
          if (y1(j1-1)<=y2(j2) .and. y1(j1)>=y2(j2) .and.&
              x1(i1-1)<=x2(i2) .and. x1(i1)>=x2(i2) .and.&
              z1(k1-1)<=z2(k2) .and. z1(k1)>=z2(k2)) then
@@ -227,7 +246,20 @@ do i2=1,nx2-dnx2
                           ((ay0*ux1(i1-1,j1-1-1,k1+1)+ay1*ux1(i1-1,j1-1,k1+1)+ay2*ux1(i1-1,j1-1+1,k1+1))*ax0+&
 			  (ay0*ux1(i1,j1-1-1,k1+1)+ay1*ux1(i1,j1-1,k1+1)+ay2*ux1(i1,j1-1+1,k1+1))*ax1+&
                           (ay0*ux1(i1-1,j1-1-1,k1+1)+ay1*ux1(i1-1,j1-1,k1+1)+ay2*ux1(i1-1,j1-1+1,k1+1))*ax2)*az2
-             
+             !ux2(i2,j2,k2)=ux1(i1,j1,k1)
+	     if (isnan(ax0) .or. isnan(ax1) .or. isnan(ax2) .or.isnan(ay0) .or. isnan(ay1) &
+                  .or. isnan(ay2) .or. isnan(az0) .or. isnan(az1) .or. isnan(az2)) then
+	     print *, '-----------------------------------------'
+	     print *, i1,j1,k1
+             print *, ax0 ,ax1 , ax2
+	     print *, ay0 ,ay1 , ay2
+	     print *, az0 ,az1 , az2
+	     print *, '>>>>>YYYYYY>>>>',(z1(k1+1)-z1(k1-1)),(z1(k1+1)-z1(k1))
+
+             endif
+             !if (ux1(I1,J1,K1)/=ux2(I2,J2,K2)) then 
+                 !print *, ux1(I1,J1,K1),ux2(I2,J2,K2),I1,J1,K1
+             !endif
              k1_start=k1
              j1_start=j1
              i1_start=i1
@@ -261,7 +293,7 @@ do i2=1,nx2-dnx2
                           ((ay0*ux1(i1-1,j1-1,k1-1+1)+ay1*ux1(i1-1,j1,k1-1+1)+ay2*ux1(i1-1,j1+1,k1-1+1))*ax0+&
 			  (ay0*ux1(i1,j1-1,k1-1+1)+ay1*ux1(i1,j1,k1-1+1)+ay2*ux1(i1,j1+1,k1-1+1))*ax1+&
                           (ay0*ux1(i1-1,j1-1,k1-1+1)+ay1*ux1(i1-1,j1,k1-1+1)+ay2*ux1(i1-1,j1+1,k1-1+1))*ax2)*az2
-             
+             !ux2(i2,j2,k2)=ux1(i1,j1,k1)
              k1_start=k1
              j1_start=j1
              i1_start=i1
@@ -277,7 +309,8 @@ enddo
 
 call cpu_time(t2)
 print *, 'time = ',t2-t1
-
+!ux2(nx2,:,:)=ux1(nx1,:,:)
+!ux2(:,ny2,:)=ux1(:,ny1,:)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if (i_var ==1) then 
@@ -289,10 +322,20 @@ else
          access='stream',form='unformatted',position='append')
 endif
 
+print *, 'Writting the variable number : ',i_var
   DO K=1,nz2
      DO J=1,ny2-dny2
         DO I=1,nx2-dnx2
+	    if (isnan(ux2(I,J,K))) then 
+		print*, 'NAN NAN NAN NAN NAN NAN NAN NAN NAN NAN NAN NAN '
+		print*, i,k,k
+		stop
+	    endif
 	    write (20) ux2(I,J,K)
+            !if (abs((ux1(I,J,K)-ux2(I,J,K))/ux1(i,j,k))>100) then 
+            !if (isnan(ux2(I,J,K))) then 
+                !print *, ux1(I,J,K),ux2(I,J,K),I,J,K
+            !endif
         ENDDO
      ENDDO
   ENDDO
@@ -305,10 +348,13 @@ end program mapping
 
 !*******************************************************************
 subroutine stretching(yp,yly,ny,beta,istret,ncly,fileName)
-!
+! This subroutine is taken form INCOMAPACT3D code.
+! https://www.incompact3d.com/
+! It determine the grid points locations when stretching is used.
+ 
 !*******************************************************************
-!
-!use dummy
+! 
+
 implicit none
 
 real(8) :: yinf,den,xnum,xcx,den1,den2,den3,den4,xnum1,cst
