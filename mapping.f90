@@ -15,7 +15,7 @@ program mapping
   integer :: i1_start,k1_start,dny1,dnx1
   integer(8) ::count
   integer :: istret1,ncly1
-  integer, parameter :: nx1=128 , ny1=129, nz1=256,N_VAR=10 !13
+  integer, parameter :: nx1=2765 , ny1=321, nz1=256,N_VAR=13 !10 !13
   real(8),dimension(nx1, ny1, nz1) :: ux1,uy1,uz1
   real(8),dimension(:),allocatable :: y1
   real(8),dimension(nx1) :: x1
@@ -24,7 +24,7 @@ program mapping
   real(8) ::ay0,ay1,ay2,ax0,ax1,ax2,az0,az1,az2,za0
 !================== File 2  ================================
   integer :: i2,j2,k2,dnx2,dny2,istret2,ncly2
-  integer,parameter:: nx2=128, ny2=129, nz2=256
+  integer,parameter:: nx2=1843, ny2=321, nz2=204
   real(8),dimension(nx2, ny2, nz2) :: ux2,uy2,uz2
   real(8),dimension(:),allocatable :: y2
   real(8),dimension(nx2) :: x2
@@ -32,17 +32,17 @@ program mapping
   real(8) ::xlx2,yly2,zlz2,dx2,dz2,dy2,beta2  
   integer :: np=1 ! polynomial order  NOT USED
   logical :: exist
-  !character(len=100) :: fileName1='/home/om1014/PhD/INCOMPACT3D/TBL/TBL_PRO_xlx_500/sauve.dat'
-  character(len=100) :: fileName1='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve_orig.dat'
-  !character(len=100) :: fileName2='sauve_mapped_2.dat'
-  character(len=100) :: fileName2='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve_in.dat'
+  character(len=100) :: fileName1='/home/om1014/PhD/INCOMPACT3D/TBL/TBL_PRO_xlx_500/sauve.dat'
+  !character(len=100) :: fileName1='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve_orig.dat'
+  character(len=100) :: fileName2='sauve_mapped_TBL.dat'
+  !character(len=100) :: fileName2='/home/om1014/PhD/INCOMPACT3D/Channel/channel/sauve_in.dat'
 !!! ============== File 1 ===================================
   allocate(y1(ny1))
-  xlx1=12.5663706144 !500.
-  yly1=2. !40.
-  zlz1=2. !40.
-  istret1=2 !3
-  beta1=0.259065151 !1.3
+  xlx1= 500.! 12.5663706144 !500.
+  yly1=40. !2. !40.
+  zlz1=40. !2. !40.
+  istret1=3 !2 !3
+  beta1=1.3 !0.259065151 !1.3
   ncly1=2
   dx1=xlx1/(nx1-1)
   dz1=zlz1/(nz1-1)
@@ -102,7 +102,9 @@ ENDIF
   COUNT = 1
 DO i_var=1,N_VAR !! THIS THE OUTER LOOP TO SWETCH BETWEEN VARIABLS
 
-if (i_var==N_VAR .and. N_VAR>1) then
+!! The last variable in the file is the pressure which has one less grid point 
+!! in the direction where the number of grid points is ODD number. 
+if (i_var==N_VAR .and. N_VAR>1) then 
    if (mod(ny1,2)/=0) then
        dny1=1; dny2=1
    endif
@@ -223,9 +225,9 @@ do i2=1,nx2-dnx2
              x1(i1-1)<=x2(i2) .and. x1(i1)>=x2(i2) .and.&
              z1(k1-1)<=z2(k2) .and. z1(k1)>=z2(k2)) then
 
-             ay0=(y2(j2)-y1(j1-1))*(y2(j2)-y1(j1-1+1))/((y1(j1-1-1)-y1(j1-1))*(y1(j1-1-1)-y1(j1-1+1))) 
-             ay1=(y2(j2)-y1(j1-1-1))*(y2(j2)-y1(j1-1+1))/((y1(j1-1)-y1(j1-1-1))*(y1(j1-1)-y1(j1-1+1))) 
-             ay2=(y2(j2)-y1(j1-1-1))*(y2(j2)-y1(j1-1))/((y1(j1-1+1)-y1(j1-1-1))*(y1(j1-1+1)-y1(j1-1)))
+             ay0=(y2(j2)-y1(j1-1))*(y2(j2)-y1(j1))/((y1(j1 -2)-y1(j1-1))*(y1(j1 -2)-y1(j1))) 
+             ay1=(y2(j2)-y1(j1 -2))*(y2(j2)-y1(j1))/((y1(j1-1)-y1(j1 -2))*(y1(j1-1)-y1(j1))) 
+             ay2=(y2(j2)-y1(j1 -2))*(y2(j2)-y1(j1-1))/((y1(j1)-y1(j1 -2))*(y1(j1)-y1(j1-1)))
 
              ax0=(x2(i2)-x1(i1))*(x2(i2)-x1(i1+1))/((x1(i1-1)-x1(i1))*(x1(i1-1)-x1(i1+1))) 
              ax1=(x2(i2)-x1(i1-1))*(x2(i2)-x1(i1+1))/((x1(i1)-x1(i1-1))*(x1(i1)-x1(i1+1))) 
@@ -235,17 +237,17 @@ do i2=1,nx2-dnx2
              az1=(z2(k2)-z1(k1-1))*(z2(k2)-z1(k1+1))/((z1(k1)-z1(k1-1))*(z1(k1)-z1(k1+1))) 
              az2=(z2(k2)-z1(k1-1))*(z2(k2)-z1(k1))/((z1(k1+1)-z1(k1-1))*(z1(k1+1)-z1(k1)))
 
-             ux2(i2,j2,k2)=((ay0*ux1(i1-1,j1-1-1,k1-1)+ay1*ux1(i1-1,j1-1,k1-1)+ay2*ux1(i1-1,j1-1+1,k1-1))*ax0+&
-			  (ay0*ux1(i1,j1-1-1,k1-1)+ay1*ux1(i1,j1-1,k1-1)+ay2*ux1(i1,j1-1+1,k1-1))*ax1+&
-                          (ay0*ux1(i1-1,j1-1-1,k1-1)+ay1*ux1(i1-1,j1-1,k1-1)+ay2*ux1(i1-1,j1-1+1,k1-1))*ax2)*az0+&
+             ux2(i2,j2,k2)=((ay0*ux1(i1-1,j1 -2,k1-1)+ay1*ux1(i1-1,j1-1,k1-1)+ay2*ux1(i1-1,j1,k1-1))*ax0+&
+			  (ay0*ux1(i1,j1 -2,k1-1)+ay1*ux1(i1,j1-1,k1-1)+ay2*ux1(i1,j1,k1-1))*ax1+&
+                          (ay0*ux1(i1-1,j1 -2,k1-1)+ay1*ux1(i1-1,j1-1,k1-1)+ay2*ux1(i1-1,j1,k1-1))*ax2)*az0+&
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                          ((ay0*ux1(i1-1,j1-1-1,k1)+ay1*ux1(i1-1,j1-1,k1)+ay2*ux1(i1-1,j1-1+1,k1))*ax0+&
-			  (ay0*ux1(i1,j1-1-1,k1)+ay1*ux1(i1,j1-1,k1)+ay2*ux1(i1,j1-1+1,k1))*ax1+&
-                          (ay0*ux1(i1-1,j1-1-1,k1)+ay1*ux1(i1-1,j1-1,k1)+ay2*ux1(i1-1,j1-1+1,k1))*ax2)*az1+&
+                          ((ay0*ux1(i1-1,j1 -2,k1)+ay1*ux1(i1-1,j1-1,k1)+ay2*ux1(i1-1,j1,k1))*ax0+&
+			  (ay0*ux1(i1,j1 -2,k1)+ay1*ux1(i1,j1-1,k1)+ay2*ux1(i1,j1,k1))*ax1+&
+                          (ay0*ux1(i1-1,j1 -2,k1)+ay1*ux1(i1-1,j1-1,k1)+ay2*ux1(i1-1,j1,k1))*ax2)*az1+&
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                          ((ay0*ux1(i1-1,j1-1-1,k1+1)+ay1*ux1(i1-1,j1-1,k1+1)+ay2*ux1(i1-1,j1-1+1,k1+1))*ax0+&
-			  (ay0*ux1(i1,j1-1-1,k1+1)+ay1*ux1(i1,j1-1,k1+1)+ay2*ux1(i1,j1-1+1,k1+1))*ax1+&
-                          (ay0*ux1(i1-1,j1-1-1,k1+1)+ay1*ux1(i1-1,j1-1,k1+1)+ay2*ux1(i1-1,j1-1+1,k1+1))*ax2)*az2
+                          ((ay0*ux1(i1-1,j1 -2,k1+1)+ay1*ux1(i1-1,j1-1,k1+1)+ay2*ux1(i1-1,j1,k1+1))*ax0+&
+			  (ay0*ux1(i1,j1 -2,k1+1)+ay1*ux1(i1,j1-1,k1+1)+ay2*ux1(i1,j1,k1+1))*ax1+&
+                          (ay0*ux1(i1-1,j1 -2,k1+1)+ay1*ux1(i1-1,j1-1,k1+1)+ay2*ux1(i1-1,j1,k1+1))*ax2)*az2
              !ux2(i2,j2,k2)=ux1(i1,j1,k1)
 	     if (isnan(ax0) .or. isnan(ax1) .or. isnan(ax2) .or.isnan(ay0) .or. isnan(ay1) &
                   .or. isnan(ay2) .or. isnan(az0) .or. isnan(az1) .or. isnan(az2)) then
@@ -278,21 +280,21 @@ do i2=1,nx2-dnx2
              ax1=(x2(i2)-x1(i1-1))*(x2(i2)-x1(i1+1))/((x1(i1)-x1(i1-1))*(x1(i1)-x1(i1+1))) 
              ax2=(x2(i2)-x1(i1-1))*(x2(i2)-x1(i1))/((x1(i1+1)-x1(i1-1))*(x1(i1+1)-x1(i1)))
 
-             az0=(z2(k2)-z1(k1-1))*(z2(k2)-z1(k1-1+1))/((z1(k1-1-1)-z1(k1-1))*(z1(k1-1-1)-z1(k1-1+1))) 
-             az1=(z2(k2)-z1(k1-1-1))*(z2(k2)-z1(k1-1+1))/((z1(k1-1)-z1(k1-1-1))*(z1(k1-1)-z1(k1-1+1))) 
-             az2=(z2(k2)-z1(k1-1-1))*(z2(k2)-z1(k1-1))/((z1(k1-1+1)-z1(k1-1-1))*(z1(k1-1+1)-z1(k1-1)))
+             az0=(z2(k2)-z1(k1-1))*(z2(k2)-z1(k1))/((z1(k1 -2)-z1(k1-1))*(z1(k1 -2)-z1(k1))) 
+             az1=(z2(k2)-z1(k1 -2))*(z2(k2)-z1(k1))/((z1(k1-1)-z1(k1 -2))*(z1(k1-1)-z1(k1))) 
+             az2=(z2(k2)-z1(k1 -2))*(z2(k2)-z1(k1-1))/((z1(k1)-z1(k1 -2))*(z1(k1)-z1(k1-1)))
 
-             ux2(i2,j2,k2)=((ay0*ux1(i1-1,j1-1,k1-1-1)+ay1*ux1(i1-1,j1,k1-1-1)+ay2*ux1(i1-1,j1+1,k1-1-1))*ax0+&
-			  (ay0*ux1(i1,j1-1,k1-1-1)+ay1*ux1(i1,j1,k1-1-1)+ay2*ux1(i1,j1+1,k1-1-1))*ax1+&
-                          (ay0*ux1(i1-1,j1-1,k1-1-1)+ay1*ux1(i1-1,j1,k1-1-1)+ay2*ux1(i1-1,j1+1,k1-1-1))*ax2)*az0+&
+             ux2(i2,j2,k2)=((ay0*ux1(i1-1,j1-1,k1 -2)+ay1*ux1(i1-1,j1,k1 -2)+ay2*ux1(i1-1,j1+1,k1 -2))*ax0+&
+			  (ay0*ux1(i1,j1-1,k1 -2)+ay1*ux1(i1,j1,k1 -2)+ay2*ux1(i1,j1+1,k1 -2))*ax1+&
+                          (ay0*ux1(i1-1,j1-1,k1 -2)+ay1*ux1(i1-1,j1,k1 -2)+ay2*ux1(i1-1,j1+1,k1 -2))*ax2)*az0+&
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                           ((ay0*ux1(i1-1,j1-1,k1-1)+ay1*ux1(i1-1,j1,k1-1)+ay2*ux1(i1-1,j1+1,k1-1))*ax0+&
 			  (ay0*ux1(i1,j1-1,k1-1)+ay1*ux1(i1,j1,k1-1)+ay2*ux1(i1,j1+1,k1-1))*ax1+&
                           (ay0*ux1(i1-1,j1-1,k1-1)+ay1*ux1(i1-1,j1,k1-1)+ay2*ux1(i1-1,j1+1,k1-1))*ax2)*az1+&
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                          ((ay0*ux1(i1-1,j1-1,k1-1+1)+ay1*ux1(i1-1,j1,k1-1+1)+ay2*ux1(i1-1,j1+1,k1-1+1))*ax0+&
-			  (ay0*ux1(i1,j1-1,k1-1+1)+ay1*ux1(i1,j1,k1-1+1)+ay2*ux1(i1,j1+1,k1-1+1))*ax1+&
-                          (ay0*ux1(i1-1,j1-1,k1-1+1)+ay1*ux1(i1-1,j1,k1-1+1)+ay2*ux1(i1-1,j1+1,k1-1+1))*ax2)*az2
+                          ((ay0*ux1(i1-1,j1-1,k1)+ay1*ux1(i1-1,j1,k1)+ay2*ux1(i1-1,j1+1,k1))*ax0+&
+			  (ay0*ux1(i1,j1-1,k1)+ay1*ux1(i1,j1,k1)+ay2*ux1(i1,j1+1,k1))*ax1+&
+                          (ay0*ux1(i1-1,j1-1,k1)+ay1*ux1(i1-1,j1,k1)+ay2*ux1(i1-1,j1+1,k1))*ax2)*az2
              !ux2(i2,j2,k2)=ux1(i1,j1,k1)
              k1_start=k1
              j1_start=j1
