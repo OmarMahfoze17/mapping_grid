@@ -4,6 +4,13 @@
 ! The code uses 2nd order polynomial interpolation
 ! 
 ! The code is made by Omar Mahfoze, E-mail: omar.mahfoze15@imperial.ac.uk
+
+!Stet the stake to unlimited
+!     ulimit -s unlimited
+!Use this line to compile
+!    gfortran -fopenmp -O3 mapping.f90
+!To improve the performance pin threads
+!   likwid-pin -c 1,2,3,4 ./a.out
 program mapping
 !
 !############################################################################
